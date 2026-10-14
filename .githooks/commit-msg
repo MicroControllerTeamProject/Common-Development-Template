@@ -1,6 +1,6 @@
 #!/bin/sh
 # Prefix local commit messages with the Jira issue key found in the branch.
-# Example: feature/GS-5-sms -> "GS-5: fix SMS timeout"
+# Example: feature/GS-5-sms -> "GS-5 fix SMS timeout"
 set -eu
 
 message_file="${1:-}"
@@ -28,8 +28,15 @@ awk -v issue="$issue" '
   BEGIN { done = 0 }
   {
     if (!done && $0 !~ /^[[:space:]]*(#|$)/) {
-      if (index($0, issue) == 0) print issue ": " $0
-      else print $0
+      if (index($0, issue ":") == 1) {
+        line = substr($0, length(issue) + 2)
+        sub(/^[[:space:]]*/, "", line)
+        print issue " " line
+      } else if (index($0, issue " ") == 1) {
+        print $0
+      } else {
+        print issue " " $0
+      }
       done = 1
       next
     }
