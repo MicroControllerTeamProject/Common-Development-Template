@@ -20,7 +20,7 @@ Moduli alternativi: `release` oppure `jira`. I file esistenti **non vengono sovr
 ## Regole essenziali
 
 - Sviluppo: `feature/GS-5-descrizione` → `develop` → `release/1.0.0` → `main`.
-- La chiave Jira (`GS-5`) compare nella branch e viene anteposta ai commit in locale (esempio: `GS-5: fix SMS buffer`).
+- La chiave Jira (`GS-5`) compare nella branch e viene anteposta ai commit in locale (esempio: `GS-5 fix SMS buffer`).
 - **Per bloccare davvero i merge**, configura le *branch protection/rulesets* di GitHub con i controlli obbligatori. Il solo YAML non impedisce un merge.
 - Il collegamento automatico degli sviluppi alle issue Jira richiede inoltre l'integrazione **GitHub for Jira** configurata su Jira.
 
