@@ -21,7 +21,7 @@ scripts\install-common.bat -ProjectPath "C:\Progetti\MioRepository" -Modules all
 | `release/1.0.0` | Preparazione della versione |
 | `main` | Versioni rilasciate |
 
-Il modulo Jira controlla che le branch `feature/*`, `bugfix/*`, `fix/*`, `hotfix/*`, `task/*` contengano una chiave come `GS-5` nelle **pull request**. La chiave viene aggiunta automaticamente al primo rigo del messaggio di commit tramite hook **locale**; non modifica l'issue Jira e non sostituisce l'integrazione **GitHub for Jira** da abilitare nell'istanza Jira.
+Il modulo Jira controlla che le branch `feature/*`, `bugfix/*`, `fix/*`, `hotfix/*`, `task/*` contengano una chiave come `GS-5` nelle **pull request**. La chiave viene aggiunta automaticamente al primo rigo del messaggio di commit tramite hook **locale**, nel formato `GS-5 Descrizione` (senza due punti); non modifica l'issue Jira e non sostituisce l'integrazione **GitHub for Jira** da abilitare nell'istanza Jira.
 
 Il flusso normale e `feature/* -> develop -> release/* -> main`. Il workflow `branch-policy.yml` blocca il check delle PR verso `main` se la sorgente non e `release/*` dello stesso repository.
 
