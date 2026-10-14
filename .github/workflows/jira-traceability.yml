@@ -19,13 +19,14 @@ jobs:
         run: |
           case "$SOURCE_BRANCH" in
             feature/*|bugfix/*|fix/*|hotfix/*|task/*)
-              if [[ ! "$SOURCE_BRANCH" =~ (^|[/_-])[A-Z][A-Z0-9]+-[1-9][0-9]*($|[/_-]) ]]; then
-                echo "::error::Branch must contain a Jira issue key (example: feature/GS-5-description)."
+              # Match the same Jira key convention as the global hook.
+              if [[ ! "$SOURCE_BRANCH" =~ (^|[./_-])[A-Z][A-Z0-9]*-[0-9]+($|[./_-]) ]]; then
+                echo "::error::Branch must contain a Jira key (example: feature/GS-5-description)."
                 exit 1
               fi
               echo "Jira issue key found."
               ;;
             *)
-              echo "Jira key check not applicable to this branch type."
+              echo "No Jira key needed for this branch type."
               ;;
           esac

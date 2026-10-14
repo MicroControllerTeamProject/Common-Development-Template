@@ -1,44 +1,58 @@
-# Installazione e regole operative
+# Configurazione Common: Git locale, GitHub e Jira
 
-## Installare in un repository esistente
+## 1. Hook Jira globale su Windows 11
 
-1. Clona `Common-Development-Template` sul PC Windows.
-2. Apri **CMD** nella cartella del Common ed esegui:
+Dal clone aggiornato di Common, in CMD:
+
+```bat
+scripts\install-global-jira.bat
+git config --global --get core.hooksPath
+```
+
+Risultato atteso: `C:/GitHooks`. Il batch copia `hooks/prepare-commit-msg` in `C:\GitHooks\prepare-commit-msg`, senza estensione. Git for Windows lo esegue automaticamente tramite la shell inclusa in Git. SourceTree usa il medesimo Git solo se configurato a utilizzare quell'installazione o una configurazione globale equivalente.
+
+La procedura e idempotente: se il file coincide non serve altro; se esiste un file diverso, il batch si ferma senza modificarlo. Con `-Force` ne crea prima una copia `.bak.<timestamp>`. Se `core.hooksPath` globale punta gia a un'altra cartella, l'installer si ferma per non disattivare hook gia esistenti: analizza e integra gli hook prima di modificarlo.
+
+Il controllo locale applica il pattern **`[A-Z][A-Z0-9]*-[0-9]+`** con delimitatori nel nome branch. Esempi:
+
+| Branch | Messaggio scritto | Risultato |
+| --- | --- | --- |
+| `feature/GS-5-sms` | `Fix ricezione SMS` | `GS-5 Fix ricezione SMS` |
+| `feature/GS-5-sms` | `GS-5: Fix SMS` | `GS-5 Fix SMS` |
+| `feature/GS-5-sms` | `GS-5 Fix SMS` | Invariato |
+| `develop` | `Fix SMS` | Invariato |
+| `release/1.0.0` | `Release pronta` | Invariato |
+
+L'hook non modifica commit Git di merge, squash e amend, né gli altri tipi di commit che non hanno una chiave Jira nella branch. Per disabilitarlo in un singolo repository non Jira: `git config --local common.jira.enabled false`. Per riattivarlo: `git config --local --unset common.jira.enabled`.
+
+Se un repository ha un `core.hooksPath` **locale**, questo prevale sulla configurazione globale. Verifica dalla root del progetto con:
+
+```bat
+git config --show-origin --get core.hooksPath
+```
+
+Non rimuovere a caso un hook locale gia esistente. Se la configurazione locale `.githooks` deriva dal precedente installatore e non contiene altri hook necessari, si puo eliminare con `git config --local --unset core.hooksPath`.
+
+## 2. Workflow di un repository (AVR oppure altro)
+
+Dalla root del clone Common:
 
 ```bat
 scripts\install-common.bat -ProjectPath "C:\Progetti\MioRepository" -Modules all
 ```
 
-`-Modules release` installa solo la policy delle release. `-Modules jira` installa workflow Jira e Git hook. Ripeti il comando per altri progetti. Con `-Force` sovrascrivi i file differenti **dopo backup**; senza il flag non vengono toccati. Controlla `git status` e fai commit dei file installati, inclusa la cartella `.githooks`; il valore `core.hooksPath` e configurato solo nel clone locale, dunque **ogni sviluppatore deve attivarlo sul suo PC** (o installarlo con lo stesso batch).
+Il comando copia soltanto `.github/workflows/branch-policy.yml` e `.github/workflows/jira-traceability.yml`. `-Modules release` e `-Modules jira` consentono di copiarne uno solo. I file esistenti differenti vengono preservati; usa `-Force` per creare una copia di backup e aggiornarli. Esegui `git status`, verifica le differenze, poi fai commit e push.
 
-## Branch e Jira
+Flusso: `feature/GS-5-descrizione` → `develop` → `release/1.0.0` → `main`. Il workflow Jira verifica la chiave delle branch `feature/*`, `bugfix/*`, `fix/*`, `hotfix/*`, `task/*`; la policy verso `main` richiede una PR da `release/*` dello stesso repository.
 
-| Branch | Scopo |
-| --- | --- |
-| `develop` | Integrazione continua dello sviluppo |
-| `feature/GS-5-descrizione` | Feature collegata alla issue Jira GS-5 |
-| `bugfix/GS-6-descrizione` | Correzione collegata a Jira |
-| `release/1.0.0` | Preparazione della versione |
-| `main` | Versioni rilasciate |
+## 3. Protezioni remote e integrazione Jira
 
-Il modulo Jira controlla che le branch `feature/*`, `bugfix/*`, `fix/*`, `hotfix/*`, `task/*` contengano una chiave come `GS-5` nelle **pull request**. La chiave viene aggiunta automaticamente al primo rigo del messaggio di commit tramite hook **locale**, nel formato `GS-5 Descrizione` (senza due punti); non modifica l'issue Jira e non sostituisce l'integrazione **GitHub for Jira** da abilitare nell'istanza Jira.
+Per bloccare realmente le PR non autorizzate, crea la protezione di `main` nelle impostazioni **Settings > Rules > Rulesets** del repository GitHub, richiedendo PR e il check obbligatorio **Validate source branch**. Se proteggi `develop`, puoi rendere obbligatorio il check **Validate Jira issue key**, assicurandoti che il workflow sia in esecuzione sulle PR interessate. I controlli GitHub Actions non impediscono i merge da soli; le protezioni dipendono anche dal piano e dalle impostazioni del repository.
 
-Il flusso normale e `feature/* -> develop -> release/* -> main`. Il workflow `branch-policy.yml` blocca il check delle PR verso `main` se la sorgente non e `release/*` dello stesso repository.
+Collega GitHub all'istanza Jira mediante **GitHub for Jira**, autorizzando i repository appropriati. Il Git hook genera un riferimento testuale; da solo non crea issue né aggiorna automaticamente Jira. Non sono richiesti token Jira nei file di questo Common.
 
-## Applicare effettivamente il blocco su GitHub
+## 4. Aggiornamenti e limiti
 
-Per ogni repository, in **Settings -> Rules -> Rulesets** (oppure **Branches / Branch protection rules**, in base al piano e all'interfaccia):
-
-- Proteggi `main`, richiedi pull request e rendi obbligatorio **Validate source branch**.
-- Proteggi `develop` se vuoi vietare push diretti e richiedi **Validate Jira issue key** se il progetto usa Jira.
-- Evita bypass amministrativi non necessari e applica le regole anche ai soggetti che potrebbero aggirarle, se disponibile.
-- Verifica il blocco con una PR `develop -> main` (deve fallire) e una `release/1.0.0 -> main` (il check deve passare). **Il check GitHub Actions senza ruleset obbligatorio non blocca i merge.**
-
-In repository pubblici, le funzionalita di ruleset/protezione dipendono dal piano GitHub e dalle impostazioni del repository. Per il collegamento Jira-GitHub, installa/configura l'integrazione nell'istanza Jira con accesso ai repository opportuni. Non sono richiesti token Jira nei workflow qui inclusi.
-
-## Limiti e aggiornamenti
-
-- GitHub Actions verifica le PR remote; il Git hook modifica i messaggi **solo nei cloni locali configurati**, non via interfaccia web o altri cloni.
-- Se il repository possiede gia altri hook, non usare `-Force` senza verificare l'effetto del cambio di `core.hooksPath`: un nuovo percorso puo disattivare quelli precedenti. Se necessario, combina gli hook manualmente.
-- Per aggiornare i file installati, esegui il batch dal Common aggiornato, verifica il diff e poi committa le modifiche.
-- **Non sono moduli comuni**: `firmware-ci.yml` (compilatore, FQBN, librerie), `GenerateGitVersion.bat` (identificativo build AVR), `board.txt` e `.gitignore` dedicati a `GitVersion.h`: rimangono in AVR-Firmware-Template.
+- **Hook locale**: aggiornalo in `C:\GitHooks` con `scripts\install-global-jira.bat -Force` dopo aver fatto `git pull` del Common.
+- **Workflow per repository**: esegui nuovamente `scripts\install-common.bat`, verifica i diff e aggiorna con `-Force` se opportuno.
+- `firmware-ci.yml`, `GenerateGitVersion.bat`, `board.txt`, configurazioni FQBN e librerie rimangono specifiche di **AVR-Firmware-Template**.

@@ -1,0 +1,2 @@
+# Git for Windows requires LF line endings for shell hooks.
+hooks/prepare-commit-msg text eol=lf
