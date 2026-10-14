@@ -66,7 +66,7 @@ try {
         Install-File '.githooks/.gitattributes' '.githooks/.gitattributes' | Out-Null
         $hookReady = Install-File '.githooks/commit-msg' '.githooks/commit-msg'
         if ($hookReady) {
-            $existingPath = & git -C $repoRoot config --local --get core.hooksPath
+            $existingPath = & git -C $repoRoot config --get core.hooksPath
             $existingPath = "$existingPath".Trim()
             if ($existingPath -and $existingPath -ne '.githooks' -and -not $Force) {
                 Write-Warning "core.hooksPath gia configurato ($existingPath), non modificato. Usa -Force solo dopo aver valutato gli hook precedenti."
